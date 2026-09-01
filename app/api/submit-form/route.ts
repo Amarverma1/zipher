@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
 
@@ -39,8 +39,10 @@ export async function POST(request) {
       throw new Error("Missing Supabase environment variables.");
     }
 
+    // Supabase Server Client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Save Data in Supabase
     const { data, error } = await supabase
       .from("form_submissions")
       .insert([
@@ -73,6 +75,7 @@ export async function POST(request) {
       );
     }
 
+    // Resend Email
     const resendApiKey = process.env.RESEND_API_KEY;
     const adminEmail = process.env.ADMIN_EMAIL;
 
@@ -126,13 +129,15 @@ export async function POST(request) {
       data,
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Server Catch Error:", error);
+
+    const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
 
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Something went wrong. Please try again.",
+        message: errorMessage,
       },
       { status: 500 }
     );
