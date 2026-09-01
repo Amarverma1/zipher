@@ -26,20 +26,21 @@ export async function POST(request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Full name, username, email and gender are required.",
+          message: "Full name, username, email and gender are required.",
         },
         { status: 400 }
       );
     }
 
-    // Supabase Server Client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // Save Data in Supabase
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase environment variables.");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const { data, error } = await supabase
       .from("form_submissions")
       .insert([
@@ -62,66 +63,62 @@ export async function POST(request) {
       .single();
 
     if (error) {
-      console.error("Supabase Error:", error);
-
+      console.error("Supabase Error Details:", error);
       return NextResponse.json(
         {
           success: false,
-          message: error.message,
+          message: `Supabase Error: ${error.message} (Code: ${error.code})`,
         },
         { status: 500 }
       );
     }
 
-    // Resend Email
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const adminEmail = process.env.ADMIN_EMAIL;
 
-    await resend.emails.send({
+    if (!resendApiKey || !adminEmail) {
+      throw new Error("Missing Resend environment variables.");
+    }
+
+    const resend = new Resend(resendApiKey);
+
+    const { error: emailError } = await resend.emails.send({
       from: "Zipher Form <onboarding@resend.dev>",
-      to: [process.env.ADMIN_EMAIL],
+      to: [adminEmail],
       subject: `New Zipher Form Submission - ${fullName}`,
-
       html: `
         <h2>New Zipher Data Policy Submission</h2>
-
         <hr />
-
         <p><strong>Full Name:</strong> ${fullName}</p>
         <p><strong>Username:</strong> ${username}</p>
         <p><strong>Email:</strong> ${email}</p>
-
         <hr />
-
         <p><strong>Zip Code:</strong> ${zipCode || "-"}</p>
         <p><strong>City:</strong> ${city || "-"}</p>
         <p><strong>Country:</strong> ${country || "-"}</p>
-
         <hr />
-
         <p><strong>Gender:</strong> ${gender}</p>
         <p><strong>Age:</strong> ${age || "-"}</p>
-
         <hr />
-
-        <p><strong>Subsidy Benefit:</strong> ${
-          subsidyBenefit || "-"
-        }</p>
-
-        <p><strong>Eligibility:</strong> ${
-          eligibility || "-"
-        }</p>
-
-        <p><strong>Health Medicare:</strong> ${
-          healthMedicare || "-"
-        }</p>
-
+        <p><strong>Subsidy Benefit:</strong> ${subsidyBenefit || "-"}</p>
+        <p><strong>Eligibility:</strong> ${eligibility || "-"}</p>
+        <p><strong>Health Medicare:</strong> ${healthMedicare || "-"}</p>
         <hr />
-
         <h3>User Query</h3>
-
         <p>${query || "-"}</p>
       `,
     });
+
+    if (emailError) {
+      console.error("Resend Email Error Details:", emailError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Email Error: ${emailError.message}`,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -130,12 +127,12 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error("Server Error:", error);
+    console.error("Server Catch Error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong. Please try again.",
+        message: error.message || "Something went wrong. Please try again.",
       },
       { status: 500 }
     );
