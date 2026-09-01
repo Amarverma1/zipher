@@ -6,75 +6,136 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    const { name, email, phone, message } = body;
+    const {
+      fullName,
+      username,
+      email,
+      zipCode,
+      city,
+      country,
+      gender,
+      age,
+      subsidyBenefit,
+      eligibility,
+      healthMedicare,
+      query,
+    } = body;
 
-    // Validation
-    if (!name || !email) {
+    // Basic Validation
+    if (!fullName || !username || !email || !gender) {
       return NextResponse.json(
         {
           success: false,
-          message: "Name and email are required",
+          message:
+            "Full name, username, email and gender are required.",
         },
         { status: 400 }
       );
     }
 
-    // Supabase
+    // Supabase Server Client
     const supabase = createClient(
-      process.env.SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Save data
+    // Save Data in Supabase
     const { data, error } = await supabase
       .from("form_submissions")
       .insert([
         {
-          name,
-          email,
-          phone,
-          message,
+          full_name: fullName,
+          username: username,
+          email: email,
+          zip_code: zipCode,
+          city: city,
+          country: country,
+          gender: gender,
+          age: age ? Number(age) : null,
+          subsidy_benefit: subsidyBenefit,
+          eligibility: eligibility,
+          health_medicare: healthMedicare,
+          query: query,
         },
       ])
       .select()
       .single();
 
     if (error) {
-      throw error;
+      console.error("Supabase Error:", error);
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 500 }
+      );
     }
 
-    // Resend
+    // Resend Email
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from: "Form Submission <onboarding@resend.dev>",
+      from: "Zipher Form <onboarding@resend.dev>",
       to: [process.env.ADMIN_EMAIL],
-      subject: `New Form Submission from ${name}`,
-      html: `
-        <h2>New Form Submission</h2>
+      subject: `New Zipher Form Submission - ${fullName}`,
 
-        <p><strong>Name:</strong> ${name}</p>
+      html: `
+        <h2>New Zipher Data Policy Submission</h2>
+
+        <hr />
+
+        <p><strong>Full Name:</strong> ${fullName}</p>
+        <p><strong>Username:</strong> ${username}</p>
         <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone || "-"}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message || "-"}</p>
+
+        <hr />
+
+        <p><strong>Zip Code:</strong> ${zipCode || "-"}</p>
+        <p><strong>City:</strong> ${city || "-"}</p>
+        <p><strong>Country:</strong> ${country || "-"}</p>
+
+        <hr />
+
+        <p><strong>Gender:</strong> ${gender}</p>
+        <p><strong>Age:</strong> ${age || "-"}</p>
+
+        <hr />
+
+        <p><strong>Subsidy Benefit:</strong> ${
+          subsidyBenefit || "-"
+        }</p>
+
+        <p><strong>Eligibility:</strong> ${
+          eligibility || "-"
+        }</p>
+
+        <p><strong>Health Medicare:</strong> ${
+          healthMedicare || "-"
+        }</p>
+
+        <hr />
+
+        <h3>User Query</h3>
+
+        <p>${query || "-"}</p>
       `,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Form submitted successfully",
+      message: "Form submitted successfully!",
       data,
     });
 
   } catch (error) {
-
-    console.error(error);
+    console.error("Server Error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong",
+        message: "Something went wrong. Please try again.",
       },
       { status: 500 }
     );
