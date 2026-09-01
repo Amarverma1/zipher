@@ -10,6 +10,7 @@ export async function POST(request: Request) {
       fullName,
       username,
       email,
+      contact,
       zipCode,
       city,
       country,
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
           full_name: fullName,
           username: username,
           email: email,
+          contact: contact || null,
           zip_code: zipCode,
           city: city,
           country: country,
@@ -95,6 +97,7 @@ export async function POST(request: Request) {
         <p><strong>Full Name:</strong> ${fullName}</p>
         <p><strong>Username:</strong> ${username}</p>
         <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Contact Number:</strong> ${contact || "-"}</p>
         <hr />
         <p><strong>Zip Code:</strong> ${zipCode || "-"}</p>
         <p><strong>City:</strong> ${city || "-"}</p>

@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+ 
+
+
+  /* ========================================== */
+  /* THEME CONFIGURATION - EDIT COLORS HERE     */
+  /* ========================================== */
+  --theme-bg: #020617;                   /* Main background */
+  --theme-card-bg: #090d16;              /* Form card background */
+  --theme-border: #1e293b;               /* Border color */
+  --theme-primary: #0ea5e9;              /* Primary neon accent (Cyan/Sky) */
+  --theme-primary-hover: #0284c7;        /* Primary button hover */
+  --theme-text-main: #ffffff;            /* Main text color */
+  --theme-text-muted: #94a3b8;           /* Muted text color */
+  --theme-glow: rgba(14, 165, 233, 0.2);
 }
 
 @theme inline {
